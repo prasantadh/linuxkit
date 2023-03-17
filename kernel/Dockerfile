@@ -7,6 +7,7 @@ RUN apt update && apt install -y \
     bc \
     binutils-dev \
     bison \
+    clang-15 \
     curl \
     diffutils \
     flex \
@@ -15,6 +16,7 @@ RUN apt update && apt install -y \
     kmod \
     libelf-dev \
     libunwind-dev \
+    lld-15 \
     make \
     ncurses-dev \
     openssl \
@@ -29,6 +31,7 @@ ARG KERNEL_VERSION
 ARG KERNEL_SERIES
 ARG EXTRA
 ARG DEBUG
+ENV PATH="/usr/lib/llvm-15/bin:${PATH}"
 
 # We copy the entire directory. This copies some unneeded files, but
 # allows us to check for the existence /patches-${KERNEL_SERIES} to
@@ -114,12 +117,12 @@ RUN case $(uname -m) in \
         sed -i 's/CONFIG_PANIC_ON_OOPS=y/# CONFIG_PANIC_ON_OOPS is not set/' ${KERNEL_DEF_CONF}; \
         cat /config${DEBUG} >> ${KERNEL_DEF_CONF}; \
     fi && \
-    make defconfig && \
-    make oldconfig 
+    make LLVM=1 defconfig && \
+    make LLVM=1 oldconfig 
 
 
 # Kernel
-RUN make V=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
+RUN make LLVM=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
     case $(uname -m) in \
     x86_64) \
         cp arch/x86_64/boot/bzImage /out/kernel; \
@@ -132,21 +135,21 @@ RUN make V=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
     ([ -n "${DEBUG}" ] && cp vmlinux /out || true)
 
 # Modules and Device Tree binaries
-RUN make INSTALL_MOD_PATH=/tmp/kernel-modules modules_install && \
+RUN make LLVM=1 INSTALL_MOD_PATH=/tmp/kernel-modules modules_install && \
     ( DVER=$(basename $(find /tmp/kernel-modules/lib/modules/ -mindepth 1 -maxdepth 1)) && \
       cd /tmp/kernel-modules/lib/modules/$DVER && \
       rm build source && \
       ln -s /usr/src/linux-headers-$DVER build ) && \
     case $(uname -m) in \
     aarch64) \
-        make INSTALL_DTBS_PATH=/tmp/kernel-modules/boot/dtb dtbs_install; \
+        make LLVM=1 INSTALL_DTBS_PATH=/tmp/kernel-modules/boot/dtb dtbs_install; \
         ;; \
     esac && \
     ( cd /tmp/kernel-modules && tar cf /out/kernel.tar . )
 
 # Headers (userspace API)
 RUN mkdir -p /tmp/kernel-headers/usr && \
-    make INSTALL_HDR_PATH=/tmp/kernel-headers/usr headers_install && \
+    make LLVM=1 INSTALL_HDR_PATH=/tmp/kernel-headers/usr headers_install && \
     ( cd /tmp/kernel-headers && tar cf /out/kernel-headers.tar usr )
 
 # Headers (kernel development)
