@@ -1,38 +1,29 @@
 ARG BUILD_IMAGE
 FROM ${BUILD_IMAGE} AS kernel-build
 ARG BUILD_IMAGE
-RUN apk add \
-    argp-standalone \
+RUN apt update && apt install -y \
     automake \
     bash \
     bc \
     binutils-dev \
     bison \
-    build-base \
     curl \
     diffutils \
     flex \
     git \
-    gmp-dev \
-    gnupg \
-    installkernel \
+    gnupg2 \
     kmod \
-    elfutils-dev \
+    libelf-dev \
     libunwind-dev \
-    linux-headers \
-    mpc1-dev \
-    mpfr-dev \
+    make \
     ncurses-dev \
     openssl \
-    openssl-dev \
     patch \
     rsync \
     sed \
     squashfs-tools \
     tar \
-    xz \
-    xz-dev \
-    zlib-dev
+    xz-utils
 
 ARG KERNEL_VERSION
 ARG KERNEL_SERIES
@@ -103,7 +94,7 @@ RUN set -e && \
     fi
 
 # Save kernel source
-RUN tar cJf /out/src/linux.tar.xz /linux
+# RUN tar cJf /out/src/linux.tar.xz /linux
 
 # Kernel config
 RUN case $(uname -m) in \
@@ -124,12 +115,11 @@ RUN case $(uname -m) in \
         cat /config${DEBUG} >> ${KERNEL_DEF_CONF}; \
     fi && \
     make defconfig && \
-    make oldconfig && \
-    if [ -z "${EXTRA}" ] && [ -z "${DEBUG}" ]; then diff -u .config ${KERNEL_DEF_CONF}; fi
+    make oldconfig 
 
 
 # Kernel
-RUN make -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
+RUN make V=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
     case $(uname -m) in \
     x86_64) \
         cp arch/x86_64/boot/bzImage /out/kernel; \
