@@ -31,6 +31,10 @@ EXTRA?=
 # - append -dbg to the CONFIG_LOCALVERSION of your kernel
 DEBUG?=
 
+# You can selectively apply the KASAN mitigation. This will:
+# - ignore symbols specified in `pwd`/ignorelist.txt
+LEVEL?=
+
 ifeq ($(HASH),)
 HASH_COMMIT?=HEAD # Setting this is only really useful with the show-tag target
 HASH?=$(shell git ls-tree --full-tree $(HASH_COMMIT) -- $(CURDIR) | awk '{print $$3}')
@@ -51,7 +55,7 @@ ifeq ($(ARCH),$(filter $(ARCH),aarch64 arm64))
 SUFFIX=-arm64
 endif
 
-TAG=$(HASH)$(DIRTY)
+TAG=$(HASH)$(DIRTY)$(LEVEL)
 
 BUILD_LABEL=--label org.mobyproject.linuxkit.kernel.buildimage=$(IMAGE_BUILDER)
 
@@ -99,13 +103,14 @@ ifeq ($(4),)
 KERNEL_VERSIONS+=$(1)
 endif
 
-build_$(2)$(3)$(4): Dockerfile Makefile $(wildcard patches-$(2)/*) $(wildcard config-$(2)*) config-dbg
+build_$(2)$(3)$(4)$(5): Dockerfile Makefile $(wildcard patches-$(2)/*) $(wildcard config-$(2)*) config-dbg
 	docker pull $(ORG)/$(IMAGE):$(1)$(3)$(4)-$(TAG)$(SUFFIX) || \
 		docker build \
 			--build-arg KERNEL_VERSION=$(1) \
 			--build-arg KERNEL_SERIES=$(2) \
 			--build-arg EXTRA=$(3) \
 			--build-arg DEBUG=$(4) \
+			--build-arg SELECTIVE=$(5) \
 			--build-arg BUILD_IMAGE=$(IMAGE_BUILDER) \
 			$(LABELS) \
 			--no-cache -t $(ORG)/$(IMAGE):$(1)$(3)$(4)-$(TAG)$(SUFFIX) .
@@ -257,12 +262,7 @@ endef
 # Debug targets only for latest stable and LTS stable
 #
 ifeq ($(ARCH),x86_64)
-$(eval $(call kernel,6.2.1,6.2.x,$(EXTRA),$(DEBUG)))
-$(eval $(call kernel,5.15.27,5.15.x,$(EXTRA),$(DEBUG)))
-$(eval $(call kernel,5.15.27,5.15.x,,-dbg))
-$(eval $(call kernel,5.10.104,5.10.x,$(EXTRA),$(DEBUG)))
-$(eval $(call kernel,5.4.172,5.4.x,$(EXTRA),$(DEBUG)))
-$(eval $(call kernel,5.11.4,5.11.x,-rt,))
+$(eval $(call kernel,6.2.1,6.2.x,$(EXTRA),$(DEBUG),$(LEVEL)))
 
 else ifeq ($(ARCH),$(filter $(ARCH),aarch64 arm64))
 $(eval $(call kernel,5.15.27,5.15.x,$(EXTRA),$(DEBUG)))
