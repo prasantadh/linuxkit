@@ -118,7 +118,7 @@ RUN case $(uname -m) in \
         cat /config${DEBUG} >> ${KERNEL_DEF_CONF}; \
     fi && \
     make LLVM=1 defconfig && \
-    make LLVM=1 oldconfig 
+    make LLVM=1 olddefconfig 
 
 
 # Kernel

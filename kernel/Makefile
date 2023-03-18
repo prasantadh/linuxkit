@@ -257,6 +257,7 @@ endef
 # Debug targets only for latest stable and LTS stable
 #
 ifeq ($(ARCH),x86_64)
+$(eval $(call kernel,6.2.1,6.2.x,$(EXTRA),$(DEBUG)))
 $(eval $(call kernel,5.15.27,5.15.x,$(EXTRA),$(DEBUG)))
 $(eval $(call kernel,5.15.27,5.15.x,,-dbg))
 $(eval $(call kernel,5.10.104,5.10.x,$(EXTRA),$(DEBUG)))
