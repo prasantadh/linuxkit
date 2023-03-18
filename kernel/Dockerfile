@@ -7,7 +7,6 @@ RUN apt update && apt install -y \
     bc \
     binutils-dev \
     bison \
-    clang-15 \
     curl \
     diffutils \
     flex \
@@ -16,22 +15,28 @@ RUN apt update && apt install -y \
     kmod \
     libelf-dev \
     libunwind-dev \
-    lld-15 \
+    lsb-release \
     make \
     ncurses-dev \
     openssl \
     patch \
     rsync \
     sed \
+    software-properties-common \
     squashfs-tools \
     tar \
+    wget \
     xz-utils
+
+RUN curl https://apt.llvm.org/llvm.sh --output llvm.sh && \
+    chmod +x llvm.sh && \
+    ./llvm.sh 17
 
 ARG KERNEL_VERSION
 ARG KERNEL_SERIES
 ARG EXTRA
 ARG DEBUG
-ENV PATH="/usr/lib/llvm-15/bin:${PATH}"
+ENV PATH="/usr/lib/llvm-17/bin:${PATH}"
 
 # We copy the entire directory. This copies some unneeded files, but
 # allows us to check for the existence /patches-${KERNEL_SERIES} to
