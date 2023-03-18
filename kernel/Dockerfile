@@ -127,7 +127,11 @@ RUN case $(uname -m) in \
 
 
 # Kernel
-RUN make LLVM=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
+RUN if [ -n "${SELECTIVE}" ]; then \
+        make LLVM=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie -fsanitize-ignorelist=/ignorelist.txt"; \
+    else \
+        make LLVM=1 -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie"; \
+    fi; \
     case $(uname -m) in \
     x86_64) \
         cp arch/x86_64/boot/bzImage /out/kernel; \
